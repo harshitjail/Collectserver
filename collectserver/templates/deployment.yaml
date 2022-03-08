@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "collectserver.fullname" . }}
+  labels:
+    {{- include "collectserver.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "collectserver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "collectserver.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ports.containerPort }}
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.ports.containerPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.ports.containerPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          resources:
+            limits:
+              cpu: {{ .Values.resourcesLimits.cpu }}
+              memory: {{ .Values.resourcesLimits.memory }}
+            requests:
+              cpu: {{ .Values.requestsResources.cpu }}
+              memory: {{ .Values.requestsResources.memory }}
+          env:
+          - name: Xms
+            value: {{ .Values.env.Xms | quote }}
+          - name: Xmx
+            value: {{ .Values.env.Xmx | quote }}
+          - name: MaxMetaspaceSize
+            value: {{ .Values.env.MaxMetaspaceSize | quote }}   
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+      {{- end }}
+          {{ if .Values.nfs.enabled }}
+          volumeMounts:
+          - name: shared-path
+            mountPath: {{ .Values.volumeMounts.sharedPath }}
+          {{- end }}
+      {{ if .Values.nfs.enabled }}
+      volumes:
+      - name: shared-path
+        nfs:
+          server: {{ .Values.volumes.nfsServer }}
+          path: {{ .Values.volumes.nfsPath }}
+      {{- end }}

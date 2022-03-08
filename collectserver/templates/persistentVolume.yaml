@@ -1,0 +1,17 @@
+{{- if .Values.persistentVolume.enabled -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-pv
+  labels:
+    type: local
+spec:
+  storageClassName: {{ .Release.Name }}-sc
+  capacity:
+    storage: {{ .Values.persistentVolume.storage }}
+  accessModes:
+    - {{ .Values.persistentVolume.accessModes }}
+  nfs: 
+    server: {{ .Values.persistentVolume.nfsServer }}
+    path: {{ .Values.persistentVolume.nfsPath }}
+{{- end }}

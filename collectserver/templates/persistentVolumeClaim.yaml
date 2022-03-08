@@ -1,0 +1,28 @@
+{{- if .Values.persistentVolumeClaim.enabled -}}
+apiVersion: v1
+
+kind: PersistentVolumeClaim
+
+metadata:
+
+ name: {{ .Release.Name }}-pvc
+ labels:
+   domain: {{ .Values.persistentVolumeClaim.domain }}
+   username: {{ .Values.persistentVolumeClaim.username }}
+
+ namespace: {{ .Release.Namespace }}
+
+spec:
+
+ accessModes:
+
+ - {{ .Values.persistentVolumeClaim.accessModes }}
+
+ resources:
+
+   requests:
+
+     storage: {{ .Values.persistentVolumeClaim.storage }}
+
+ storageClassName: {{ .Values.persistentVolumeClaim.storageClass }}
+ {{- end }}
